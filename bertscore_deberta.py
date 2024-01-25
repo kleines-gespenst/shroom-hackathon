@@ -1,13 +1,31 @@
 import json
 import pandas as pd
+import torch
 from bert_score import score
+
+#select GPU
+import os
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"] = "5"
+
+print(f"Using GPU is CUDA:{os.environ['CUDA_VISIBLE_DEVICES']}")
+
+for i in range(torch.cuda.device_count()):
+    info = torch.cuda.get_device_properties(i)
+    print(f"CUDA:{i} {info.name}, {info.total_memory / 1024 ** 2}MB")
+
+from transformers import DebertaForSequenceClassification, DebertaTokenizer, Trainer, TrainingArguments
+
+from sklearn.metrics import accuracy_score, precision_recall_fscore_support
+import mlflow
+import os
 
 path_train = "SHROOM_unlabeled-training-data-v2/train.model-agnostic.json"
 path_val = "SHROOM_dev-v2/val.model-agnostic.json"
 
 
 def calculate_bertscore_tgt_hyp(df):
-    '''a function that calculates bertscore between tgt and hyps'''
+    '''a function that calculates bertscore between tgts and hyps'''
     tgts = df.tgt.to_list()
     hyps = df.hyp.to_list()
 
@@ -43,10 +61,11 @@ with open(path_val) as f:
     val_data = json.load(f)
 
 
-
+#json to dataframe
 df_train = pd.DataFrame.from_records(train_data)
 df_val = pd.DataFrame.from_records(val_data)
 
+#split train dataset into 2 subsets as PG part is missing tgt for bertscore
 df_train_without_pg = df_train.loc[(df_train['task'] == 'MT') | (df_train['task'] == 'DM')].reset_index(drop=True)
 
 df_train_pg = df_train.loc[(df_train['task'] == 'PG')].reset_index(drop=True)
@@ -55,20 +74,14 @@ calculate_bertscore_tgt_hyp(df_train_without_pg)
 
 calculate_bertscore_src_hyp(df_train_pg)
 
+#aggregate parts of the training set back
 frames = [df_train_without_pg, df_train_pg]
 df_train_with_bertscore = pd.concat(frames).reset_index(drop=True)
-df_train_with_bertscore['hal_label_bertscore'] = df_train_with_bertscore["bertscore"] < 0.4
-df_train_with_bertscore['hal_label_bertscore'] = df_train_with_bertscore['hal_label_bertscore'].map({False: 0, True: 1})
+df_train_with_bertscore['hal_label_bertscore'] = df_train_with_bertscore["bertscore"] < 0.4 #set threshold to 0.4 for hallucination label
+df_train_with_bertscore['hal_label_bertscore'] = df_train_with_bertscore['hal_label_bertscore'].map({False: 0, True: 1}) # 0: non-hallucination, 1: hallucination
 
 #transform labels into numeric
 df_val['label'] = df_val['label'].map({'Not Hallucination': 0, 'Hallucination': 1})
-
-
-from transformers import DebertaForSequenceClassification, DebertaTokenizer, Trainer, TrainingArguments
-import torch
-from sklearn.metrics import accuracy_score, precision_recall_fscore_support
-import mlflow
-import os
 
 
 # DeBERTa tokenizer and model
@@ -95,7 +108,9 @@ class SentencePairDataset(torch.utils.data.Dataset):
 train_dataset = SentencePairDataset(train_encodings, list(df_train_with_bertscore['hal_label_bertscore']))
 valid_dataset = SentencePairDataset(valid_encodings, list(df_val['label']))
 
-def compute_metrics(preds, labels):
+def compute_metrics(pred):
+    labels = pred.label_ids
+    preds = pred.predictions.argmax(-1)
     precision, recall, f1, _ = precision_recall_fscore_support(labels, preds, average='micro')
     acc = accuracy_score(labels, preds)
     return {
@@ -108,7 +123,7 @@ def compute_metrics(preds, labels):
 # Define TrainingArguments and Trainer
 training_args = TrainingArguments(
     output_dir='./sentence_pair_classification_model_20240124',
-    num_train_epochs=1,
+    num_train_epochs=5,
     #per_device_train_batch_size=8,
     #per_device_eval_batch_size=8,
     #warmup_steps=500,
