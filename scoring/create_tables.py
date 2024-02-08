@@ -3,6 +3,10 @@ from pathlib import Path
 
 from score import get_scores
 
+NAME_WIDTH = 0.45
+NUM_COLUMNS = 3
+others_width = (1 - NAME_WIDTH) / (NUM_COLUMNS - 1)
+
 outputs = Path("data/outputs")
 
 ref = {
@@ -12,6 +16,7 @@ ref = {
 
 tracks = ["aware", "agnostic"]
 splits = ["val", "test"]
+
 
 if __name__ == "__main__":
     for track in tracks:
@@ -41,6 +46,6 @@ if __name__ == "__main__":
                 clines="all;data",
                 caption=f"{split.capitalize()}set model-{track}",
                 label=f"{split}-{track}",
-                column_format="|p{0.4\linewidth}|r|r|",
+                column_format=f"|p{{{NAME_WIDTH}\linewidth}}|R{{{others_width}\linewidth}}|R{{{others_width}\linewidth}}|",
                 position_float="centering"
             )
