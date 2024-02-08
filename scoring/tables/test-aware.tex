@@ -4,19 +4,23 @@
 \label{test-aware}
 \begin{tabular}{|p{0.4\linewidth}|r|r|}
 \hline
- & acc & rho \\
+ & Accuracy & Correlation \\
 \hline
-varya-vectara-finetuned-on-valset & \textit{\textbf{0.806}} & 0.707 \\
+varya-vectara-finetuned-on-valset & 0.806 & 0.707 \\
 \cline{1-3}
 varya-metamodel-linearreg-probs & 0.801 & 0.712 \\
 \cline{1-3}
 mahdi-test & 0.801 & 0.707 \\
+\cline{1-3}
+gabor-test-logreg & 0.801 & 0.636 \\
 \cline{1-3}
 mahdi-fusion.test & 0.783 & 0.654 \\
 \cline{1-3}
 varya-vectara-finetuned-gpt4labels-trainset-and-valset & 0.776 & 0.695 \\
 \cline{1-3}
 varya-vectara-gpt4-finetuned-on-training-set-test & 0.772 & 0.699 \\
+\cline{1-3}
+gabor-test-vote & 0.756 & 0.587 \\
 \cline{1-3}
 gabor-test-levenshtein & 0.711 & 0.418 \\
 \cline{1-3}

@@ -23,6 +23,7 @@ if __name__ == "__main__":
             scores = dict(sorted(scores.items(), key=lambda item: (item[1]["acc"],item[1]["rho"]),reverse=True))
 
             df = pd.DataFrame(scores).T
+            df.columns = ["Accuracy","Correlation"]
             df.style.set_table_styles(
                 [
                     {"selector": "toprule", "props": ":hline;"},
