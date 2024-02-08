@@ -30,15 +30,16 @@ if __name__ == "__main__":
                     {"selector": "bottomrule", "props": ":hline;"},
                 ],
                 overwrite=False,
-            ).format({("Numeric", "Floats"): "{:.3f}"}).format_index(
+            ).format(precision=3).format_index(
                 escape="latex", axis=0
-            ).highlight_max(
-                axis=None,
-                props='textit:--rwrap; textbf:--rwrap;'
+            # ).highlight_max(
+            #     axis=None,
+            #     props='textit:--rwrap; textbf:--rwrap;'
             ).to_latex(
                 Path(__file__).parent / f"tables/{split}-{track}.tex",
                 clines="all;data",
                 caption=f"{split.capitalize()}set model-{track}",
                 label=f"{split}-{track}",
                 column_format="|p{0.4\linewidth}|r|r|",
+                position_float="centering"
             )
