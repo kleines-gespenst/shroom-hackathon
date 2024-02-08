@@ -1,5 +1,3 @@
-
-from tabulate import tabulate
 import pandas as pd
 from pathlib import Path
 
@@ -9,20 +7,33 @@ outputs = Path("data/outputs")
 
 ref = {
     "test": Path("data/SHROOM_test-labeled"),
-    "val": Path("data/SHROOM_dev-v2")
+    "val": Path("data/SHROOM_dev-v2"),
 }
 
-tracks = ["aware","agnostic"]
-splits = ["val","test"]
+tracks = ["aware", "agnostic"]
+splits = ["val", "test"]
 
 if __name__ == "__main__":
     for track in tracks:
         for split in splits:
-            files = outputs.glob(f'**/{split}*{track}*.json')
+            files = outputs.glob(f"**/{split}*{track}*.json")
 
-            scores = get_scores(files,ref[split],is_val=split == "val")
+            scores = get_scores(files, ref[split], is_val=split == "val")
 
             df = pd.DataFrame(scores).T
-            latex_table = tabulate(df, tablefmt="latex",floatfmt=".3f")
-            with open(Path(__file__).parent / f"tables/{split}-{track}.tex","w") as f:
-                f.write(latex_table)
+            df.style.set_table_styles(
+                [
+                    {"selector": "toprule", "props": ":hline;"},
+                    {"selector": "midrule", "props": ":hline;"},
+                    {"selector": "bottomrule", "props": ":hline;"},
+                ],
+                overwrite=False,
+            ).format({("Numeric", "Floats"): "{:.3f}"}).format_index(
+                escape="latex", axis=0
+            ).to_latex(
+                Path(__file__).parent / f"tables/{split}-{track}.tex",
+                clines="all;data",
+                caption=f"{split.capitalize()}set model-{track}",
+                label=f"{split}-{track}",
+                column_format="|p{0.4\linewidth}|r|r|",
+            )
