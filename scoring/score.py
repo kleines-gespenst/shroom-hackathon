@@ -54,7 +54,7 @@ def get_scores(submitted_files: List[Path], ref_dir: Path, is_val: bool):
             for sub in sub_data
         ), "not all labels have the correct format"
 
-        category = "-".join(sub_file.parts[2:-1]).replace(
+        category = "-".join(sub_file.parts[3:-1]).replace(
             "_", "-"
         )  # ref_file.with_suffix('').name.split('-')[-1]
         scores[category]["acc"] = sum(
